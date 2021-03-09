@@ -1,0 +1,76 @@
+service: weatherApi
+
+custom:
+  # Load the variables specified in the given stage variables file.
+  stageVars: ${file(stage_vars/${opt:stage}.yml)}
+  defaultAwsProfile: '' # Keep default profile to use as empty string to force people to specify profile or use env
+
+package:
+  individually: true
+
+# The AWS provider configuration
+provider:
+  name: aws
+  stage: ${opt:stage, 'dev'}
+  runtime: nodejs12.x
+  region: us-east-1
+  memorySize: 1024 # Overwrite the default memory size. Default is 1024
+  versionFunctions: false # optional, default is true
+
+  # The default profile to use with this service (the AWS CLI credentials profile on your machine)
+  profile: ${self:custom.stageVars.awsProfile, self:custom.defaultAwsProfile}
+
+  # Lambda function's execution IAM  Role
+  # The policy statements below will used to create the default IAM role for all lambda functions
+  # https://serverless.com/framework/docs/providers/aws/guide/iam/
+  iamRoleStatements:
+    # Permissions to access the dynamodb
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: "*"
+
+  # you can define service wide environment variables here
+  environment:
+    ENV_TYPE: ${self:custom.stageVars.envType}
+    ENV_NAME: ${opt:stage}
+    APP_NAME: ${self:service}
+    WEATHER_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+
+
+plugins:
+  # package using webpack instead of allowing serverless to package on its own
+  # This is to add tree-shaking (https://webpack.js.org/guides/tree-shaking/) to keep lambda zip files to minimum
+  - serverless-webpack
+
+# All lambda function declarations
+functions:
+  ${file(functions.yml)}
+
+resources:
+  Resources:
+    CandidatesDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: "zipCode"
+            AttributeType: "N"
+          - AttributeName: "date"
+            AttributeType: "S"
+        KeySchema:
+          -
+            AttributeName: "zipCode"
+            KeyType: "HASH"
+          - AttributeName: "date"
+            KeyType: "RANGE"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: "NEW_AND_OLD_IMAGES"
+        TableName: ${self:provider.environment.WEATHER_TABLE}

@@ -1,0 +1,11 @@
+# All variable for the 'sample-username' stage
+
+envType: nonprod
+
+# The envName will be used for naming all AWS resources, including the ones declared in cloud formation template.
+# Usually this is kept same as the API Gateway stage name.
+envName: dev
+
+# The AWS credential profile to be used for locating AWS credentials.
+awsProfile: sunilaws
+

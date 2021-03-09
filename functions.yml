@@ -1,0 +1,33 @@
+
+# --------------------------------------------------------------------------------------------
+getWeather:
+  handler: src/functions/getWeather.handler
+  description: Gets weather for given zipcode from waether api.
+  timeout: 30 # optional, in seconds, default is 6
+  # Define the trigger for the lambda function here
+  events:
+    - http:
+        path: /get-weather/{zipcode}
+        method: get
+        cors:
+          origin: '*'
+          allowCredentials: false
+  environment:
+    FUNCTION_NAME: getWeather
+
+
+# --------------------------------------------------------------------------------------------
+getWeatherQuery:
+  handler: src/functions/getWeatherQuery.handler
+  description: Gets weather for given zipcode from dynamoDb records
+  timeout: 30 # optional, in seconds, default is 6
+  # Define the trigger for the lambda function here
+  events:
+    - http:
+        path: /get-weather-by-query/{zipcode}
+        method: get
+        cors:
+          origin: '*'
+          allowCredentials: false
+  environment:
+    FUNCTION_NAME: getWeatherQuery
